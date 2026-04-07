@@ -102,12 +102,12 @@ end: 7
 },
 
 owner: [
-"62895601029247"
+"62xxxxxxxxx"
 ],
 
 whitelist: [
-"6281234567890",
-"6283178584700"
+"62xxxxxx",
+"62xxxxxx"
 ],
 
 autoReplyMessage: `Halo 👋
