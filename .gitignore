@@ -1,0 +1,9 @@
+node_modules/
+logs/
+.wwebjs_auth/
+.wwebjs_cache/
+.env
+npm-debug.log
+package-lock.json
+package.json
+.DS_Store
