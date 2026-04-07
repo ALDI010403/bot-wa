@@ -193,8 +193,8 @@ logs/chat.log
 Contoh isi log:
 
 ```
-6281234567890 : bro ada waktu?
-6289876543210 : halo
+62xxxxxxxx : bro ada waktu?
+62xxxxxxxx : halo
 ```
 
 ---
