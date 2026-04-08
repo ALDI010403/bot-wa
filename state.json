@@ -1,3 +1,4 @@
 {
-  "sleepMode": false
+  "sleepMode": false,
+  "whitelist": []
 }

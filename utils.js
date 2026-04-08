@@ -5,7 +5,10 @@ const STATE_FILE = "./state.json"
 function loadState(){
 
 if(!fs.existsSync(STATE_FILE)){
-fs.writeFileSync(STATE_FILE, JSON.stringify({ sleepMode:false }, null,2))
+fs.writeFileSync(STATE_FILE, JSON.stringify({
+sleepMode:false,
+whitelist:[]
+},null,2))
 }
 
 return JSON.parse(fs.readFileSync(STATE_FILE))
@@ -14,7 +17,7 @@ return JSON.parse(fs.readFileSync(STATE_FILE))
 
 function saveState(state){
 
-fs.writeFileSync(STATE_FILE, JSON.stringify(state, null,2))
+fs.writeFileSync(STATE_FILE, JSON.stringify(state,null,2))
 
 }
 
@@ -25,4 +28,16 @@ return state.sleepMode
 
 }
 
-module.exports = { loadState, saveState, isSleeping }
+function getWhitelist(){
+
+const state = loadState()
+return state.whitelist || []
+
+}
+
+module.exports = {
+loadState,
+saveState,
+isSleeping,
+getWhitelist
+}

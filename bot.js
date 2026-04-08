@@ -71,7 +71,9 @@ const contact = await msg.getContact()
 // normalisasi nomor
 const sender = contact.number.replace(/\D/g, "")
 
-const whitelist = config.whitelist.map(n => n.replace(/\D/g, ""))
+const { getWhitelist } = require("./utils")
+
+const whitelist = getWhitelist()
 
 console.log("Sender:", sender)
 console.log("Whitelist:", whitelist)
@@ -222,7 +224,7 @@ const remaining = COOLDOWN_TIME - elapsed
 
 if(data.count <=2){
 
-msg.reply("Sedang Turu. DM aja kalau urgent.")
+msg.reply("Sedang Turu. Telepon aja kalau urgent.")
 return
 
 }

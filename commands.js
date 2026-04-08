@@ -14,7 +14,8 @@ if(!config.owner.includes(sender)){
 return
 }
 
-const command = body.slice(1).trim()
+const args = body.slice(1).split(" ")
+const command = args[0]
 
 const state = loadState()
 
@@ -58,24 +59,73 @@ break
 
 case "help":
 
-msg.reply(`📖 *Bot Command Guide*
+msg.reply(`📖 Bot Command Guide
 
-.sleep
-Mengaktifkan sleep mode.
-Bot akan auto reply semua pesan masuk.
+.sleep → aktifkan auto reply
+.wake → matikan auto reply
+.status → cek status bot
+.ping → cek bot aktif
+.whitelist add <nomor>
+.whitelist remove <nomor>
+.whitelist list`)
 
-.wake
-Mematikan sleep mode.
-Bot kembali normal dan tidak auto reply.
+break
 
-.status
-Menampilkan status bot saat ini.
 
-.ping
-Mengecek apakah bot masih aktif.
+case "whitelist":
 
-.help
-Menampilkan daftar command dan fungsi masing-masing.`)
+const action = args[1]
+const number = args[2]
+
+if(!state.whitelist){
+state.whitelist=[]
+}
+
+if(action === "add"){
+
+if(!number){
+msg.reply("Format: .whitelist add 628xxxx")
+return
+}
+
+if(state.whitelist.includes(number)){
+msg.reply("Nomor sudah ada di whitelist")
+return
+}
+
+state.whitelist.push(number)
+saveState(state)
+
+msg.reply(`Nomor ${number} berhasil ditambahkan ke whitelist`)
+
+}
+
+else if(action === "remove"){
+
+if(!number){
+msg.reply("Format: .whitelist remove 628xxxx")
+return
+}
+
+state.whitelist = state.whitelist.filter(n=>n!==number)
+saveState(state)
+
+msg.reply(`Nomor ${number} dihapus dari whitelist`)
+
+}
+
+else if(action === "list"){
+
+if(state.whitelist.length === 0){
+msg.reply("Whitelist kosong")
+return
+}
+
+msg.reply(`Whitelist:
+
+${state.whitelist.join("\n")}`)
+
+}
 
 break
 
