@@ -7,7 +7,7 @@ owner: [
 ],
 
 whitelist: [
-"62xxxxxxxxxx",
+"62895601029247",
 "62xxxxxxxxxx"
 ],
 

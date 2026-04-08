@@ -6,38 +6,52 @@ const config = require('./config')
 const { handleCommand } = require('./commands')
 const { isSleeping } = require('./utils')
 
-// cooldown map
-const cooldown = new Map()
+// spam tracker
+const userTracker = new Map()
 
-// cooldown time (ms)
+// cooldown time
 const COOLDOWN_TIME = 5 * 60 * 1000
 
+function formatCooldown(ms){
+
+const totalSeconds = Math.floor(ms / 1000)
+const minutes = Math.floor(totalSeconds / 60)
+const seconds = totalSeconds % 60
+
+return `${minutes} menit ${seconds} detik`
+
+}
+
 const client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: {
-        headless: true,
-        args: ['--no-sandbox']
-    }
+authStrategy: new LocalAuth(),
+puppeteer:{
+headless:true,
+args:['--no-sandbox']
+}
 })
 
 client.on('qr', qr => {
-    qrcode.generate(qr, { small: true })
-    console.log("Scan QR untuk login")
+
+qrcode.generate(qr,{small:true})
+console.log("Scan QR untuk login")
+
 })
 
-client.on('ready', () => {
-    console.log("Bot WhatsApp Ready 🚀")
+client.on('ready', ()=>{
+
+console.log("Bot WhatsApp Ready 🚀")
+
 })
 
 // =========================
 // AUTO RECONNECT
 // =========================
-client.on('disconnected', reason => {
+client.on('disconnected', reason =>{
 
-    console.log("WhatsApp disconnected:", reason)
-    console.log("Reconnecting...")
+console.log("WhatsApp disconnected:",reason)
+console.log("Reconnecting...")
 
-    client.initialize()
+client.initialize()
 
 })
 
@@ -46,104 +60,205 @@ client.on('disconnected', reason => {
 // =========================
 client.on('message', async msg => {
 
-    if (msg.fromMe) {
-    return
-    }
-    const chat = await msg.getChat()
+if(msg.fromMe){
+return
+}
 
-    // ambil contact pengirim
-    const contact = await msg.getContact()
-    const sender = contact.number
+const chat = await msg.getChat()
 
-    const whitelist = config.whitelist.map(n => n.trim())
+const contact = await msg.getContact()
 
-    console.log("Sender:", sender)
+// normalisasi nomor
+const sender = contact.number.replace(/\D/g, "")
 
-    // =========================
-    // WHITELIST CHECK
-    // =========================
-    if (whitelist.includes(sender)) {
+const whitelist = config.whitelist.map(n => n.replace(/\D/g, ""))
 
-        console.log("Whitelist detected → skip reply")
-        return
+console.log("Sender:", sender)
+console.log("Whitelist:", whitelist)
 
-    }
+// =========================
+// WHITELIST CHECK
+// =========================
+if(whitelist.includes(sender)){
 
-    // =========================
-    // LOGGING
-    // =========================
-    fs.ensureDirSync("./logs")
+console.log("Whitelist detected → skip reply")
+// owner tetap bisa jalankan command
+await handleCommand(msg)
+return
 
-    fs.appendFileSync(
-        "./logs/chat.log",
-        `${sender} : ${msg.body}\n`
-    )
+}
 
-    // =========================
-    // COMMAND HANDLER
-    // =========================
-    await handleCommand(msg)
+// =========================
+// LOGGING
+// =========================
+fs.ensureDirSync("./logs")
 
-    // =========================
-    // PRIVATE CHAT AUTO REPLY
-    // =========================
-    if (!chat.isGroup) {
+fs.appendFileSync(
+"./logs/chat.log",
+`${sender} : ${msg.body}\n`
+)
 
-        if (isSleeping(config)) {
+// =========================
+// COMMAND HANDLER
+// =========================
+await handleCommand(msg)
 
-            const lastReply = cooldown.get(sender)
-            const now = Date.now()
+// =========================
+// PRIVATE CHAT AUTO REPLY
+// =========================
+if(!chat.isGroup){
 
-            if (lastReply && now - lastReply < COOLDOWN_TIME) {
+if(isSleeping(config)){
 
-                console.log("Cooldown active → skip reply")
-                return
+const now = Date.now()
 
-            }
+let data = userTracker.get(sender)
 
-            msg.reply(config.autoReplyMessage)
+if(!data){
 
-            cooldown.set(sender, now)
+data={
+count:0,
+firstMessageTime:now
+}
 
-        }
+}
 
-    }
+const elapsed = now - data.firstMessageTime
 
-    // =========================
-    // GROUP MENTION REPLY
-    // =========================
-    if (chat.isGroup) {
+if(elapsed > COOLDOWN_TIME){
 
-        const mentions = await msg.getMentions()
+data={
+count:0,
+firstMessageTime:now
+}
 
-        const botNumber = client.info.wid._serialized
+}
 
-        const isBotMentioned = mentions.some(user => user.id._serialized === botNumber)
+data.count +=1
 
-        if (isBotMentioned) {
+userTracker.set(sender,data)
 
-            const lastReply = cooldown.get(sender)
-            const now = Date.now()
+const remaining = COOLDOWN_TIME - elapsed
 
-            if (lastReply && now - lastReply < COOLDOWN_TIME) {
+// pesan ke 1 dan 2
+if(data.count <=2){
 
-                console.log("Cooldown active → skip group reply")
-                return
+msg.reply(config.autoReplyMessage)
+return
 
-            }
+}
 
-            msg.reply(`Halo 👋
+// pesan ke 3 warning
+if(data.count ===3){
 
-Sedang Turu.
+msg.reply(`${config.autoReplyMessage}
 
-Silakan DM jika urgent.`)
+⚠️ *Peringatan Spam*
 
-            cooldown.set(sender, now)
+Kamu terdeteksi mengirim pesan berulang.
 
-        }
+Bot tidak akan merespon pesan berikutnya.
 
-    }
+Cooldown tersisa: ${formatCooldown(remaining)}`)
+
+return
+
+}
+
+// pesan ke 4 ke atas
+if(data.count >=4){
+
+console.log("Spam detected → ignoring message")
+return
+
+}
+
+}
+
+}
+
+// =========================
+// GROUP MENTION REPLY
+// =========================
+if(chat.isGroup){
+
+const mentions = await msg.getMentions()
+
+const botNumber = client.info.wid._serialized
+
+const isMention = mentions.some(u=>u.id._serialized === botNumber)
+
+if(isMention){
+
+const now = Date.now()
+
+let data = userTracker.get(sender)
+
+if(!data){
+
+data={
+count:0,
+firstMessageTime:now
+}
+
+}
+
+const elapsed = now - data.firstMessageTime
+
+if(elapsed > COOLDOWN_TIME){
+
+data={
+count:0,
+firstMessageTime:now
+}
+
+}
+
+data.count +=1
+
+userTracker.set(sender,data)
+
+const remaining = COOLDOWN_TIME - elapsed
+
+if(data.count <=2){
+
+msg.reply("Sedang Turu. DM aja kalau urgent.")
+return
+
+}
+
+if(data.count ===3){
+
+msg.reply(`⚠️ *Peringatan Spam*
+
+Kamu terlalu sering mention bot.
+
+Cooldown tersisa: ${formatCooldown(remaining)}`)
+
+return
+
+}
+
+if(data.count >=4){
+
+console.log("Group spam detected → ignoring")
+return
+
+}
+
+}
+
+}
 
 })
+
+// =========================
+// MEMORY CLEANUP
+// =========================
+setInterval(()=>{
+
+userTracker.clear()
+
+},3600000)
 
 client.initialize()
