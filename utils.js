@@ -1,17 +1,28 @@
-const moment = require('moment')
+const fs = require("fs")
 
-function isSleeping(config){
+const STATE_FILE = "./state.json"
 
-if(!config.sleepMode) return false
+function loadState(){
 
-const hour = moment().hour()
-
-if(config.sleepTime.start > config.sleepTime.end){
-return hour >= config.sleepTime.start || hour < config.sleepTime.end
+if(!fs.existsSync(STATE_FILE)){
+fs.writeFileSync(STATE_FILE, JSON.stringify({ sleepMode:false }, null,2))
 }
 
-return hour >= config.sleepTime.start && hour < config.sleepTime.end
+return JSON.parse(fs.readFileSync(STATE_FILE))
 
 }
 
-module.exports = { isSleeping }
+function saveState(state){
+
+fs.writeFileSync(STATE_FILE, JSON.stringify(state, null,2))
+
+}
+
+function isSleeping(){
+
+const state = loadState()
+return state.sleepMode
+
+}
+
+module.exports = { loadState, saveState, isSleeping }

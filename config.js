@@ -1,14 +1,9 @@
 module.exports = {
 
-sleepMode: true,
-
-sleepTime: {
-start: 23,
-end: 7
-},
+cooldownMinutes: 5,
 
 owner: [
-"62xxxxxxxxxx"
+"62895601029247"
 ],
 
 whitelist: [

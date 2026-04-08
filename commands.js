@@ -1,38 +1,81 @@
-const config = require('./config')
+const config = require("./config")
+const { loadState, saveState } = require("./utils")
 
-function handleCommand(msg, client){
+async function handleCommand(msg){
 
 const body = msg.body
 
 if(!body.startsWith(".")) return
 
-const args = body.slice(1).split(" ")
-const command = args[0]
+const contact = await msg.getContact()
+const sender = contact.number
+
+if(!config.owner.includes(sender)){
+return
+}
+
+const command = body.slice(1).trim()
+
+const state = loadState()
 
 switch(command){
 
 case "sleep":
 
-config.sleepMode = true
+state.sleepMode = true
+saveState(state)
 
 msg.reply("😴 Sleep mode aktif")
 
 break
 
+
 case "wake":
 
-config.sleepMode = false
+state.sleepMode = false
+saveState(state)
 
 msg.reply("☀️ Sleep mode dimatikan")
 
 break
 
+
 case "status":
 
-msg.reply(`Bot Status:
+msg.reply(`Bot Status
 
-Sleep Mode : ${config.sleepMode}
-Sleep Time : ${config.sleepTime.start}:00 - ${config.sleepTime.end}:00`)
+Sleep Mode : ${state.sleepMode ? "ON 😴" : "OFF ☀️"}`)
+
+break
+
+
+case "ping":
+
+msg.reply("🏓 Pong! Bot aktif")
+
+break
+
+
+case "help":
+
+msg.reply(`📖 *Bot Command Guide*
+
+.sleep
+Mengaktifkan sleep mode.
+Bot akan auto reply semua pesan masuk.
+
+.wake
+Mematikan sleep mode.
+Bot kembali normal dan tidak auto reply.
+
+.status
+Menampilkan status bot saat ini.
+
+.ping
+Mengecek apakah bot masih aktif.
+
+.help
+Menampilkan daftar command dan fungsi masing-masing.`)
 
 break
 
