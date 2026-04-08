@@ -1,20 +1,51 @@
 # WhatsApp Auto Reply Bot
 
-Bot WhatsApp sederhana berbasis **Node.js** yang dapat secara otomatis membalas pesan ketika pengguna sedang offline atau tidur. Bot ini juga dapat merespon ketika disebut (mention) di dalam grup WhatsApp.
+Bot WhatsApp automation berbasis **Node.js** menggunakan library **whatsapp-web.js** yang dapat membalas pesan secara otomatis ketika pengguna sedang offline atau tidur.
 
-Bot menggunakan library **whatsapp-web.js** yang memanfaatkan WhatsApp Web untuk menjalankan automasi.
+Bot ini dirancang untuk penggunaan personal dengan fitur **anti spam protection**, **manual sleep mode**, dan **command system** yang dapat dikontrol oleh owner.
 
 ---
 
 # Features
 
+## Core Features
+
 * Auto reply ketika **sleep mode aktif**
-* Respon ketika bot **di mention di grup**
-* **Whitelist system** (nomor tertentu tidak akan di auto-reply)
+* **Manual sleep mode** cocok untuk pengguna dengan jadwal kerja shifting
+* **Persistent sleep mode** (status tetap tersimpan walaupun bot restart)
+* **Whitelist system** (nomor tertentu tidak akan di auto reply)
 * **Command system** untuk mengontrol bot
-* **Chat logging** ke file
-* Session login tersimpan sehingga tidak perlu scan QR setiap restart
-* Mendukung **private chat dan group chat**
+* **Group mention reply**
+* **Chat logging system**
+* **Auto reconnect** jika WhatsApp disconnect
+* **Ignore self message** untuk mencegah loop
+
+---
+
+## Anti Spam Protection
+
+Bot dilengkapi sistem anti spam sederhana namun efektif.
+
+Behavior anti spam:
+
+| Message Count | Bot Response                  |
+| ------------- | ----------------------------- |
+| 1             | Auto reply                    |
+| 2             | Auto reply                    |
+| 3             | Warning spam + cooldown timer |
+| 4+            | Bot tidak merespon            |
+
+Contoh warning spam:
+
+```
+⚠️ Peringatan Spam
+
+Kamu terdeteksi mengirim pesan berulang.
+
+Bot tidak akan merespon pesan berikutnya.
+
+Cooldown tersisa: 3 menit 12 detik
+```
 
 ---
 
@@ -32,16 +63,17 @@ Bot menggunakan library **whatsapp-web.js** yang memanfaatkan WhatsApp Web untuk
 ```
 bot-wa
 │
-├── bot.js          # Main bot script
-├── config.js       # Bot configuration
-├── commands.js     # Command handler
-├── utils.js        # Helper utilities
+├── bot.js
+├── commands.js
+├── utils.js
+├── config.js
+├── state.json
 ├── package.json
 ├── README.md
 ├── .gitignore
 │
 └── logs
-    └── chat.log    # Chat logs
+    └── chat.log
 ```
 
 ---
@@ -65,7 +97,7 @@ npm install
 
 # Running the Bot
 
-Jalankan bot dengan:
+Start bot:
 
 ```
 node bot.js
@@ -73,9 +105,11 @@ node bot.js
 
 Saat pertama kali dijalankan, terminal akan menampilkan **QR Code**.
 
-Scan QR menggunakan WhatsApp:
+Scan menggunakan WhatsApp:
 
+```
 WhatsApp → Linked Devices → Link Device
+```
 
 Setelah berhasil login, bot akan aktif.
 
@@ -83,7 +117,7 @@ Setelah berhasil login, bot akan aktif.
 
 # Configuration
 
-Semua konfigurasi berada di file:
+Edit file:
 
 ```
 config.js
@@ -91,100 +125,99 @@ config.js
 
 Contoh konfigurasi:
 
-```
+```javascript
 module.exports = {
 
-sleepMode: true,
-
-sleepTime: {
-start: 23,
-end: 7
-},
+cooldownMinutes: 5,
 
 owner: [
-"62xxxxxxxxx"
+"628xxxxxxxxxx"
 ],
 
 whitelist: [
-"62xxxxxx",
-"62xxxxxx"
+"628xxxxxxxxxx",
+"628xxxxxxxxxx"
 ],
 
-autoReplyMessage: `Halo 👋
-
-Saat ini saya sedang offline / turu.
-
-Pesan kamu sudah saya terima dan akan saya balas ketika sudah online.
-
-Terima kasih 🙏`
+autoReplyMessage: `Sedang Turu. Telepon aja kalo urgent bro`
 
 }
 ```
 
 Penjelasan konfigurasi:
 
-| Parameter        | Deskripsi                                       |
-| ---------------- | ----------------------------------------------- |
-| sleepMode        | Mengaktifkan atau menonaktifkan mode auto reply |
-| sleepTime        | Jam mulai dan selesai sleep mode                |
-| owner            | Nomor admin bot                                 |
-| whitelist        | Nomor yang tidak akan menerima auto reply       |
-| autoReplyMessage | Pesan balasan otomatis                          |
+| Parameter        | Description                         |
+| ---------------- | ----------------------------------- |
+| cooldownMinutes  | Durasi cooldown anti spam           |
+| owner            | Nomor admin bot                     |
+| whitelist        | Nomor yang tidak akan di auto reply |
+| autoReplyMessage | Pesan auto reply                    |
 
 ---
 
 # Commands
 
-Command dapat dikirim oleh **owner** melalui chat WhatsApp ke bot.
+Command hanya bisa digunakan oleh **owner**.
 
-| Command   | Function                 |
-| --------- | ------------------------ |
-| `.sleep`  | Mengaktifkan sleep mode  |
-| `.wake`   | Menonaktifkan sleep mode |
-| `.status` | Melihat status bot       |
-
----
-
-# Bot Behavior
-
-### Private Chat
-
-Jika seseorang mengirim pesan saat sleep mode aktif:
-
-```
-User: bro ada waktu?
-
-Bot:
-Halo 👋
-Saat ini saya sedang offline / turu.
-Pesan kamu sudah saya terima dan akan saya balas ketika sudah online.
-```
+| Command   | Function                   |
+| --------- | -------------------------- |
+| `.sleep`  | Mengaktifkan sleep mode    |
+| `.wake`   | Mematikan sleep mode       |
+| `.status` | Menampilkan status bot     |
+| `.ping`   | Mengecek apakah bot aktif  |
+| `.help`   | Menampilkan daftar command |
 
 ---
 
-### Group Chat
+# Usage Example
 
-Bot hanya akan merespon jika **di mention**.
-
-Contoh:
+### Activate Sleep Mode
 
 ```
-@BotName bro ada info?
+.sleep
 ```
 
-Bot akan membalas:
+Bot response:
 
 ```
-Halo 👋
-Sedang Turu.
-Silakan DM jika urgent.
+😴 Sleep mode aktif
+```
+
+---
+
+### Check Bot Status
+
+```
+.status
+```
+
+Bot response:
+
+```
+Bot Status
+
+Sleep Mode : ON 😴
+```
+
+---
+
+### Disable Sleep Mode
+
+```
+.wake
+```
+
+Bot response:
+
+```
+☀️ Sleep mode dimatikan
 ```
 
 ---
 
 # Logs
 
-Semua pesan masuk akan dicatat di:
+Semua pesan masuk akan dicatat pada file:
 
 ```
 logs/chat.log
@@ -193,15 +226,15 @@ logs/chat.log
 Contoh isi log:
 
 ```
-62xxxxxxxx : bro ada waktu?
-62xxxxxxxx : halo
+6281234567890 : bro ada waktu?
+6289876543210 : halo
 ```
 
 ---
 
 # Deployment (Optional)
 
-Untuk menjalankan bot 24/7 di server gunakan **PM2**.
+Untuk menjalankan bot secara **24/7** gunakan PM2.
 
 Install PM2
 
@@ -209,7 +242,7 @@ Install PM2
 npm install pm2 -g
 ```
 
-Jalankan bot
+Run bot
 
 ```
 pm2 start bot.js --name wa-bot
@@ -221,30 +254,6 @@ Auto start saat server reboot
 pm2 save
 pm2 startup
 ```
-
----
-
-# Troubleshooting
-
-### Bot tidak merespon
-
-Pastikan:
-
-* Bot sudah login
-* QR sudah di scan
-* Internet stabil
-
----
-
-### Bot logout sendiri
-
-Hapus folder session:
-
-```
-.wwebjs_auth
-```
-
-Lalu login ulang dengan scan QR.
 
 ---
 
