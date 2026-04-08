@@ -1,5 +1,7 @@
 ![NodeJS](https://img.shields.io/badge/node.js-18+-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
+![Maintenance](https://img.shields.io/badge/maintained-yes-green)
+![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen)
 # WhatsApp Auto Reply Bot
 
 Bot WhatsApp automation berbasis **Node.js** menggunakan library **whatsapp-web.js** yang dapat membalas pesan secara otomatis ketika pengguna sedang offline atau tidur.
